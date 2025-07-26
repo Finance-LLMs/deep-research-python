@@ -1,6 +1,7 @@
 import os
 import json
 import asyncio
+import time
 from pathlib import Path
 from typing import List, Dict, Optional, Any, TypedDict, Callable
 from dataclasses import dataclass
@@ -120,6 +121,8 @@ async def generate_serp_queries(
     
     except Exception as e:
         log(f"Error generating SERP queries: {e}")
+        import traceback
+        log(f"Full traceback: {traceback.format_exc()}")
         return []
 
 
@@ -134,10 +137,19 @@ async def process_serp_result(
     # Extract content from search results
     contents = []
     if "data" in result:
-        for item in result["data"]:
+        log(f"DEBUG: Found {len(result['data'])} items in search results")
+        for i, item in enumerate(result["data"]):
+            log(f"DEBUG: Item {i}: {list(item.keys())}")
             if "markdown" in item and item["markdown"]:
                 content = trim_prompt(item["markdown"], 25000)
                 contents.append(content)
+                log(f"DEBUG: Added markdown content from item {i}")
+            elif "content" in item and item["content"]:
+                content = trim_prompt(item["content"], 25000)
+                contents.append(content)
+                log(f"DEBUG: Added content from item {i}")
+    else:
+        log(f"DEBUG: No 'data' key in result. Result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
     
     log(f"Ran {query}, found {len(contents)} contents")
     
@@ -310,27 +322,64 @@ async def deep_research(
             try:
                 # Perform search using Firecrawl
                 result = firecrawl.search(
-                    serp_query.query,
-                    {
-                        "limit": 5,
-                        "scrapeOptions": {"formats": ["markdown"]}
-                    }
+                    query=serp_query.query,
+                    limit=5
                 )
                 
-                # Extract URLs
+                log(f"DEBUG: Firecrawl search result for '{serp_query.query}': success={getattr(result, 'success', False)}")
+                
+                # Extract URLs and scrape content
                 new_urls = []
-                if "data" in result:
-                    for item in result["data"]:
-                        if "url" in item and item["url"]:
-                            new_urls.append(item["url"])
+                scraped_contents = []
+                
+                # Handle SearchResponse object
+                data_items = []
+                if hasattr(result, 'data') and result.data:
+                    data_items = result.data
+                elif hasattr(result, 'model_dump'):
+                    result_dict = result.model_dump()
+                    data_items = result_dict.get("data", [])
+                
+                for item in data_items:
+                    if "url" in item and item["url"]:
+                        url = item["url"]
+                        new_urls.append(url)
+                        
+                        # Scrape the content from the URL
+                        try:
+                            # Add small delay to avoid rate limits
+                            await asyncio.sleep(1)
+                            scrape_result = firecrawl.scrape_url(url)
+                            if hasattr(scrape_result, 'markdown') and scrape_result.markdown:
+                                scraped_contents.append({
+                                    "url": url,
+                                    "markdown": scrape_result.markdown
+                                })
+                            elif hasattr(scrape_result, 'model_dump'):
+                                scrape_dict = scrape_result.model_dump()
+                                if scrape_dict.get("markdown"):
+                                    scraped_contents.append({
+                                        "url": url,
+                                        "markdown": scrape_dict["markdown"]
+                                    })
+                        except Exception as scrape_error:
+                            log(f"Error scraping {url}: {scrape_error}")
+                            continue
+                
+                log(f"Found {len(new_urls)} URLs, successfully scraped {len(scraped_contents)} pages")
                 
                 new_breadth = max(1, breadth // 2)
                 new_depth = depth - 1
                 
+                # Create a result structure that matches what process_serp_result expects
+                processed_result = {
+                    "data": scraped_contents
+                }
+                
                 # Process the search results
                 processed = await process_serp_result(
                     serp_query.query,
-                    result,
+                    processed_result,
                     num_follow_up_questions=new_breadth
                 )
                 
