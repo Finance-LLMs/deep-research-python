@@ -2,9 +2,11 @@
 
 An AI-powered research assistant that performs iterative, deep research on any topic by combining search engines, web scraping, and large language models.
 
+**🐍 This is the Python implementation of the [deep-research](https://github.com/dzhng/deep-research) project.**
+
 The goal of this repo is to provide the simplest implementation of a deep research agent - e.g. an agent that can refine its research direction over time and deep dive into a topic. Goal is to keep the repo size at <500 LoC so it is easy to understand and build on top of.
 
-If you like this project, please consider starring it and giving me a follow on [X/Twitter](https://x.com/dzhng). This project is sponsored by [Aomni](https://aomni.com).
+**🐍 This repository contains the Python implementation. For the Node.js/TypeScript version, see the original repository.**
 
 ## How It Works
 
@@ -73,26 +75,33 @@ flowchart TB
 - **Smart Follow-up**: Generates follow-up questions to better understand research needs
 - **Comprehensive Reports**: Produces detailed markdown reports with findings and sources
 - **Concurrent Processing**: Handles multiple searches and result processing in parallel for efficiency
+- **Multiple AI Providers**: Support for NVIDIA, OpenAI, Fireworks AI, and custom/local models
+- **API Server**: Optional REST API for integration with other applications
 
 ## Requirements
 
-- Node.js environment
+- **Python 3.8+**
 - API keys for:
-  - Firecrawl API (for web search and content extraction)
+  - **Firecrawl API** (for web search and content extraction)
   - One of the following AI providers:
-    - **NVIDIA API** (recommended - access to DeepSeek R1, Llama 3.1 405B, Nemotron 70B)
+    - **NVIDIA API** (recommended - access to Llama 3.1 70B, DeepSeek R1)
     - **Fireworks AI** (for DeepSeek R1)
     - **OpenAI API** (for GPT-4o-mini)
+    - **Custom/Local** (for self-hosted models)
 
 ## Setup
 
-### Node.js
+### Python Installation
 
-1. Clone the repository
-2. Install dependencies:
-
+1. Clone the repository:
 ```bash
-npm install
+git clone https://github.com/Finance-LLMs/deep-research-python.git
+cd deep-research-python
+```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
 ```
 
 3. Set up environment variables in a `.env.local` file:
@@ -112,30 +121,42 @@ OPENAI_KEY="your_openai_key"
 # FIREWORKS_KEY="your_fireworks_key"
 ```
 
-### Model Priority
+### Docker Setup
+
+1. Clone the repository
+2. Rename `.env.example` to `.env.local` and set your API keys
+
+3. Build the Docker image:
+```bash
+docker build -t deep-research-python -f Dockerfile.python .
+```
+
+4. Run the Docker container:
+```bash
+docker run -p 3051:3051 --env-file .env.local deep-research-python
+```
+
+Or use Docker Compose:
+```bash
+docker compose up -d
+```
+
+## Model Priority
 
 The system automatically selects the best available model in this order:
 
-1. **DeepSeek R1** (Fireworks) - if `FIREWORKS_KEY` is set
-2. **DeepSeek R1** (NVIDIA) - if `NVIDIA_API_KEY` is set ⭐ **Recommended**
-3. **Llama 3.1 405B** (NVIDIA) - Most capable model
-4. **Nemotron 70B** (NVIDIA) - NVIDIA's research-optimized model
-5. **Llama 3.1 70B** (NVIDIA) - Strong general purpose model
-6. **GPT-4o-mini** (OpenAI) - Fallback option
-
-To use local LLM, comment out other API keys and instead set `OPENAI_ENDPOINT` and `CUSTOM_MODEL`:
-
-- Set `OPENAI_ENDPOINT` to the address of your local server (eg."http://localhost:1234/v1")
-- Set `CUSTOM_MODEL` to the name of the model loaded in your local server.
+1. **Custom Model** - if `CUSTOM_MODEL` and `OPENAI_ENDPOINT` are set
+2. **NVIDIA Llama 3.1 70B** - if `NVIDIA_API_KEY` is set ⭐ **Recommended**
+3. **DeepSeek R1** (Fireworks) - if `FIREWORKS_KEY` is set
+4. **GPT-4o-mini** (OpenAI) - Fallback option
 
 ### NVIDIA API (Recommended)
 
 NVIDIA's build.nvidia.com provides access to state-of-the-art models including:
 
-- **DeepSeek R1**: Excellent reasoning capabilities, perfect for research
-- **Llama 3.1 405B**: Most capable open-source model available
+- **Llama 3.1 70B**: Strong general-purpose model, excellent for research
+- **DeepSeek R1**: Excellent reasoning capabilities, perfect for research tasks
 - **Nemotron 70B**: NVIDIA's research-optimized model
-- **Llama 3.1 70B**: Strong general-purpose model
 
 To get an API key:
 1. Visit [build.nvidia.com](https://build.nvidia.com)
@@ -143,58 +164,21 @@ To get an API key:
 3. Generate an API key
 4. Add it to your `.env.local` as `NVIDIA_API_KEY`
 
-### Docker
+### Local/Custom Models
 
-1. Clone the repository
-2. Rename `.env.example` to `.env.local` and set your API keys
-
-3. Run `docker build -f Dockerfile`
-
-4. Run the Docker image:
+To use local LLM or custom OpenAI-compatible APIs, set these environment variables:
 
 ```bash
-docker compose up -d
+OPENAI_ENDPOINT="http://localhost:1234/v1"  # Your local server endpoint
+CUSTOM_MODEL="your_model_name"              # Model name loaded in your server
+OPENAI_KEY="your_api_key_if_needed"         # API key if required
 ```
 
-5. Execute `npm run docker` in the docker service:
-
-```bash
-docker exec -it deep-research npm run docker
-```
-
-## Usage
-
-Run the research assistant:
-
-```bash
-npm start
-```
-
-You'll be prompted to:
-
-1. Enter your research query
-2. Specify research breadth (recommended: 3-10, default: 4)
-3. Specify research depth (recommended: 1-5, default: 2)
-4. Answer follow-up questions to refine the research direction
-
-The system will then:
-
-1. Generate and execute search queries
-2. Process and analyze search results
-3. Recursively explore deeper based on findings
-4. Generate a comprehensive markdown report
-
-The final report will be saved as `report.md` or `answer.md` in your working directory, depending on which modes you selected.
-
-### Concurrency
-
-If you have a paid version of Firecrawl or a local version, feel free to increase the `ConcurrencyLimit` by setting the `CONCURRENCY_LIMIT` environment variable so it runs faster.
-
-If you have a free version, you may sometimes run into rate limit errors, you can reduce the limit to 1 (but it will run a lot slower).
+These will take the highest priority if set.
 
 ### DeepSeek R1
 
-Deep research performs great on R1! You can access DeepSeek R1 through two providers:
+Deep research performs excellently on R1! You can access DeepSeek R1 through:
 
 #### NVIDIA (Recommended)
 ```bash
@@ -206,34 +190,83 @@ NVIDIA_API_KEY="your_nvidia_api_key"
 FIREWORKS_KEY="your_fireworks_api_key"
 ```
 
-The system will automatically use Fireworks R1 if both keys are present (higher priority).
+## Usage
 
-### Alternative Providers
+### Command Line Interface
 
-For other OpenAI-compatible APIs or local models, you can use these environment variables:
+Run the interactive research assistant:
 
 ```bash
-OPENAI_ENDPOINT="custom_endpoint"
-CUSTOM_MODEL="custom_model"
+python -m src.run
 ```
 
-These will take the highest priority if set.
+You'll be prompted to:
 
-## How It Works
+1. Enter your research query
+2. Specify research breadth (recommended: 2-10, default: 4)
+3. Specify research depth (recommended: 1-5, default: 2)
+4. Choose between generating a report or a specific answer
+5. Answer follow-up questions to refine the research direction
+
+### API Server
+
+Start the REST API server:
+
+```bash
+python -m src.api
+```
+
+The server will start on port 3051. Available endpoints:
+
+#### POST `/api/research`
+Perform research and get a concise answer.
+
+#### POST `/api/generate-report`
+Perform research and generate a detailed report.
+
+Both endpoints accept:
+```json
+{
+  "query": "Your research question",
+  "breadth": 4,  // optional, default 4
+  "depth": 2     // optional, default 2
+}
+```
+
+Example request:
+```bash
+curl -X POST http://localhost:3051/api/research \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Tesla stock performance 2025", "breadth": 3, "depth": 2}'
+```
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `FIRECRAWL_KEY` | Your Firecrawl API key | Required |
+| `FIRECRAWL_BASE_URL` | Custom Firecrawl endpoint | `https://api.firecrawl.dev` |
+| `FIRECRAWL_CONCURRENCY` | Concurrency limit for scraping | `2` |
+| `NVIDIA_API_KEY` | NVIDIA API key | Optional |
+| `OPENAI_KEY` | OpenAI API key | Optional |
+| `FIREWORKS_KEY` | Fireworks AI API key | Optional |
+| `CUSTOM_MODEL` | Custom model name for local endpoints | Optional |
+| `OPENAI_ENDPOINT` | Custom OpenAI-compatible endpoint | Optional |
+| `CONTEXT_SIZE` | Maximum context size for prompts | `128000` |
+
+## How the Research Process Works
 
 1. **Initial Setup**
-
    - Takes user query and research parameters (breadth & depth)
    - Generates follow-up questions to understand research needs better
 
 2. **Deep Research Process**
-
    - Generates multiple SERP queries based on research goals
-   - Processes search results to extract key learnings
+   - Searches the web using Firecrawl API
+   - Scrapes and processes search results to extract key learnings
    - Generates follow-up research directions
 
 3. **Recursive Exploration**
-
    - If depth > 0, takes new research directions and continues exploration
    - Each iteration builds on previous learnings
    - Maintains context of research goals and findings
@@ -242,6 +275,59 @@ These will take the highest priority if set.
    - Compiles all findings into a comprehensive markdown report
    - Includes all sources and references
    - Organizes information in a clear, readable format
+
+## Concurrency and Rate Limiting
+
+### Firecrawl Rate Limits
+
+- **Free tier**: Limited requests per minute
+- **Paid tier**: Higher rate limits
+- **Self-hosted**: No rate limits
+
+Configure concurrency based on your Firecrawl plan:
+
+```bash
+# For free tier (to avoid rate limits)
+FIRECRAWL_CONCURRENCY=1
+
+# For paid tier or self-hosted
+FIRECRAWL_CONCURRENCY=5
+```
+
+### Performance Tips
+
+1. **Start with smaller parameters**: Use `breadth=2, depth=1` for testing
+2. **Monitor rate limits**: Watch for 429 errors and adjust concurrency
+3. **Use faster models**: NVIDIA models are generally faster than others
+4. **Self-host Firecrawl**: For unlimited scraping without rate limits
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"No model found" error**: Ensure at least one AI provider API key is set
+2. **Rate limit errors**: Reduce `FIRECRAWL_CONCURRENCY` or upgrade Firecrawl plan
+3. **Empty search results**: Check Firecrawl API key and network connectivity
+4. **Import errors**: Ensure all dependencies are installed with `pip install -r requirements.txt`
+
+### Debug Mode
+
+Add debug output by modifying the logging in `src/deep_research.py`:
+
+```python
+def log(*args):
+    print(*args)  # Enable all debug output
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. Areas for improvement:
+
+- Additional AI provider integrations
+- Enhanced search result processing
+- Better error handling and retry logic
+- UI improvements for the CLI interface
+- More comprehensive test coverage
 
 ## License
 
