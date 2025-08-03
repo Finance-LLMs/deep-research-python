@@ -41,7 +41,7 @@ server = Server("deep-research")
 
 
 @server.call_tool()
-async def deep_web_research(arguments: dict) -> Sequence[TextContent]:
+async def deep_web_research(_name: str, arguments: dict) -> Sequence[TextContent]:
     """
     Perform deep web research on any topic using iterative search and analysis.
     
@@ -148,7 +148,7 @@ async def deep_web_research(arguments: dict) -> Sequence[TextContent]:
 
 
 @server.call_tool()
-async def generate_research_questions(arguments: dict) -> Sequence[TextContent]:
+async def generate_research_questions(_name: str, arguments: dict) -> Sequence[TextContent]:
     """
     Generate clarifying follow-up questions for a research topic.
     
