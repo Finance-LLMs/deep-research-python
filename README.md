@@ -128,7 +128,7 @@ OPENAI_KEY="your_openai_key"
 
 3. Build the Docker image:
 ```bash
-docker build -t deep-research-python -f Dockerfile.python .
+docker build -t deep-research-python .
 ```
 
 4. Run the Docker container:
