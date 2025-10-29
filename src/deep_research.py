@@ -262,14 +262,22 @@ async def write_final_answer(
     }
     
     try:
+        log("DEBUG: Calling generate_object for final answer...")
         response = generate_object(system_prompt(), answer_prompt, schema)
         
+        log(f"DEBUG: Response received: {response}")
         result = parse_response(response)
+        log(f"DEBUG: Parsed result: {result}")
         
-        return result.get("exact_answer", "")
+        answer = result.get("exact_answer", "")
+        log(f"DEBUG: Final answer extracted: '{answer}'")
+        
+        return answer
     
     except Exception as e:
         log(f"Error writing final answer: {e}")
+        import traceback
+        log(f"Full traceback: {traceback.format_exc()}")
         return "Error generating answer"
 
 
