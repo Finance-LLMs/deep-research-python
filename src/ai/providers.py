@@ -24,6 +24,7 @@ class AIProvider:
         self.nvidia_client = None
         self.fireworks_client = None
         self.custom_client = None
+        self.openrouter_client = None
         
         # Initialize providers based on available API keys
         if os.getenv("OPENAI_KEY"):
@@ -44,6 +45,12 @@ class AIProvider:
                 base_url="https://api.fireworks.ai/inference/v1"
             )
         
+        if os.getenv("OPEN_ROUTER_KEY"):
+            self.openrouter_client = OpenAI(
+                api_key=os.getenv("OPEN_ROUTER_KEY"),
+                base_url="https://openrouter.ai/api/v1"
+            )
+        
         if os.getenv("CUSTOM_MODEL") and self.openai_client:
             self.custom_client = self.openai_client
 
@@ -51,7 +58,14 @@ class AIProvider:
         """Get the best available model and client"""
         # Priority order based on the TypeScript version
         if self.custom_client and os.getenv("CUSTOM_MODEL"):
-            return self.custom_client, os.getenv("CUSTOM_MODEL")
+            custom_model = os.getenv("CUSTOM_MODEL")
+            if not custom_model:
+                raise ValueError("CUSTOM_MODEL environment variable is empty")
+            return self.custom_client, custom_model
+        
+        # OpenRouter DeepSeek R1
+        if self.openrouter_client:
+            return self.openrouter_client, "deepseek/deepseek-r1-0528:free"
         
         # NVIDIA models (start with smaller, more stable models)
         if self.nvidia_client:

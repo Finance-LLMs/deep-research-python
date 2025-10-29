@@ -84,7 +84,8 @@ flowchart TB
 - API keys for:
   - **Firecrawl API** (for web search and content extraction)
   - One of the following AI providers:
-    - **NVIDIA API** (recommended - access to Llama 3.1 70B, DeepSeek R1)
+    - **OpenRouter API** (recommended - access to free models)
+    - **NVIDIA API** (access to Llama 3.1 70B, DeepSeek R1)
     - **Fireworks AI** (for DeepSeek R1)
     - **OpenAI API** (for GPT-4o-mini)
     - **Custom/Local** (for self-hosted models)
@@ -111,11 +112,14 @@ FIRECRAWL_KEY="your_firecrawl_key"
 # If you want to use your self-hosted Firecrawl, add the following below:
 # FIRECRAWL_BASE_URL="http://localhost:3002"
 
-# NVIDIA API (build.nvidia.com) - Recommended
-NVIDIA_API_KEY="your_nvidia_api_key"
+# OpenRouter API (openrouter.ai)
+OPEN_ROUTER_KEY="your_openrouter_key"
+
+# Alternative: NVIDIA API (build.nvidia.com)
+# NVIDIA_API_KEY="your_nvidia_api_key"
 
 # Alternative: OpenAI API (fallback)
-OPENAI_KEY="your_openai_key"
+# OPENAI_KEY="your_openai_key"
 
 # Alternative: Fireworks AI (for DeepSeek R1)
 # FIREWORKS_KEY="your_fireworks_key"
@@ -146,9 +150,10 @@ docker compose up -d
 The system automatically selects the best available model in this order:
 
 1. **Custom Model** - if `CUSTOM_MODEL` and `OPENAI_ENDPOINT` are set
-2. **NVIDIA Llama 3.1 70B** - if `NVIDIA_API_KEY` is set ⭐ **Recommended**
-3. **DeepSeek R1** (Fireworks) - if `FIREWORKS_KEY` is set
-4. **GPT-4o-mini** (OpenAI) - Fallback option
+2. **DeepSeek R1** (OpenRouter) - if `OPEN_ROUTER_KEY` is set ⭐ **Recommended**
+3. **NVIDIA Llama 3.1 70B** - if `NVIDIA_API_KEY` is set
+4. **DeepSeek R1** (Fireworks) - if `FIREWORKS_KEY` is set
+5. **GPT-4o-mini** (OpenAI) - Fallback option
 
 ### NVIDIA API (Recommended)
 
