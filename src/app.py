@@ -50,13 +50,13 @@ async def run_research(session_id, query, breadth, depth, is_report):
         # Custom progress callback
         def progress_callback(progress):
             log_to_queue(session_id, 'progress', {
-                'current_depth': progress.get('current_depth', 0),
-                'total_depth': progress.get('total_depth', depth),
-                'current_breadth': progress.get('current_breadth', 0),
-                'total_breadth': progress.get('total_breadth', breadth),
-                'current_query': progress.get('current_query', ''),
-                'total_queries': progress.get('total_queries', 0),
-                'completed_queries': progress.get('completed_queries', 0)
+                'current_depth': progress['current_depth'],
+                'total_depth': progress['total_depth'],
+                'current_breadth': progress['current_breadth'],
+                'total_breadth': progress['total_breadth'],
+                'current_query': progress['current_query'] or 'Processing...',
+                'total_queries': progress['total_queries'],
+                'completed_queries': progress['completed_queries']
             })
         
         # Run the research
@@ -69,9 +69,35 @@ async def run_research(session_id, query, breadth, depth, is_report):
         
         log_to_queue(session_id, 'info', 'Research complete! Generating final output...')
         
-        # Generate final output
+        # Generate final output without sources (they'll be shown separately)
         if is_report:
-            final_output = await write_final_report(query, research_result.learnings, research_result.visited_urls)
+            # Generate report without sources appended
+            learnings_string = "\n".join([f"<learning>\n{learning}\n</learning>" for learning in research_result.learnings])
+            from .ai.providers import generate_object, parse_response, trim_prompt
+            from .prompt import system_prompt
+            
+            report_prompt = trim_prompt(
+                f"Given the following prompt from the user, write a final report on the topic using the learnings from research. Make it as as detailed as possible, aim for 3 or more pages, include ALL the learnings from research:\n\n<prompt>{query}</prompt>\n\nHere are all the learnings from previous research:\n\n<learnings>\n{learnings_string}\n</learnings>"
+            )
+            
+            schema = {
+                "type": "object",
+                "properties": {
+                    "report_markdown": {
+                        "type": "string",
+                        "description": "Final report on the topic in Markdown"
+                    }
+                },
+                "required": ["report_markdown"]
+            }
+            
+            try:
+                response = generate_object(system_prompt(), report_prompt, schema)
+                result = parse_response(response)
+                final_output = result.get("report_markdown", "")
+            except Exception as e:
+                log_to_queue(session_id, 'error', f'Error generating report: {str(e)}')
+                final_output = "Error generating report"
         else:
             final_output = await write_final_answer(query, research_result.learnings)
         
@@ -82,7 +108,7 @@ async def run_research(session_id, query, breadth, depth, is_report):
         except Exception as e:
             log_to_queue(session_id, 'warning', f'Could not generate feedback: {str(e)}')
         
-        # Send final result
+        # Send final result (sources separate from output)
         log_to_queue(session_id, 'complete', {
             'output': final_output,
             'learnings': research_result.learnings,

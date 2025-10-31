@@ -286,6 +286,14 @@ function downloadMarkdown() {
     let content = `# ${query}\n\n`;
     content += results.output;
     
+    // Add sources section when downloading
+    if (results.sources && results.sources.length > 0) {
+        content += '\n\n## Sources\n\n';
+        results.sources.forEach((url, index) => {
+            content += `${index + 1}. ${url}\n`;
+        });
+    }
+    
     const blob = new Blob([content], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
