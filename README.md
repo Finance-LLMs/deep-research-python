@@ -197,6 +197,29 @@ FIREWORKS_KEY="your_fireworks_api_key"
 
 ## Usage
 
+### Web Dashboard (Recommended) 🚀
+
+The easiest way to use Deep Research is through the interactive web dashboard:
+
+```bash
+python run_dashboard.py
+```
+
+Or directly:
+
+```bash
+python -m src.app
+```
+
+Then open your browser to `http://localhost:5000`
+
+Features:
+- **Interactive UI**: User-friendly web interface for research
+- **Real-time Progress**: Live updates on research progress with visual indicators
+- **Result Visualization**: View results in organized tabs (Output, Learnings, Sources, Feedback)
+- **Download Reports**: Export research reports as Markdown files
+- **Customizable Parameters**: Easily adjust breadth, depth, and output mode
+
 ### Command Line Interface
 
 Run the interactive research assistant:
