@@ -77,6 +77,7 @@ flowchart TB
 - **Concurrent Processing**: Handles multiple searches and result processing in parallel for efficiency
 - **Multiple AI Providers**: Support for NVIDIA, OpenAI, Fireworks AI, and custom/local models
 - **API Server**: Optional REST API for integration with other applications
+- **🆕 Advanced Retrieval Processing**: Semantic re-ranking, deduplication, and freshness filtering for higher quality results ([See details](RETRIEVAL_PROCESSOR.md))
 
 ## Requirements
 
@@ -268,6 +269,30 @@ curl -X POST http://localhost:3051/api/research \
   -d '{"query": "Tesla stock performance 2025", "breadth": 3, "depth": 2}'
 ```
 
+## Retrieval Post-Processing 🆕
+
+Enhance search quality with semantic re-ranking, deduplication, and freshness filtering:
+
+```bash
+# Enable in .env.local
+USE_RERANKING=true        # Enable post-processing (default: true)
+DEDUP_THRESHOLD=0.9       # Deduplication threshold (default: 0.9)
+MIN_YEAR=2020            # Minimum year for documents (default: 2020)
+```
+
+**Features:**
+- **Semantic Re-ranking**: Orders results by relevance using sentence transformers
+- **Deduplication**: Removes near-duplicate content (configurable threshold)
+- **Freshness Filtering**: Keeps only recent documents (configurable min year)
+
+**Benefits:**
+- Higher quality search results
+- Fewer redundant documents
+- More current information
+- Better research outcomes
+
+See [RETRIEVAL_PROCESSOR.md](RETRIEVAL_PROCESSOR.md) for detailed documentation.
+
 ## Environment Variables
 
 | Variable | Description | Default |
@@ -281,6 +306,9 @@ curl -X POST http://localhost:3051/api/research \
 | `CUSTOM_MODEL` | Custom model name for local endpoints | Optional |
 | `OPENAI_ENDPOINT` | Custom OpenAI-compatible endpoint | Optional |
 | `CONTEXT_SIZE` | Maximum context size for prompts | `128000` |
+| `USE_RERANKING` | Enable retrieval post-processing | `true` |
+| `DEDUP_THRESHOLD` | Similarity threshold for deduplication | `0.9` |
+| `MIN_YEAR` | Minimum year for freshness filtering | `2020` |
 
 ## How the Research Process Works
 

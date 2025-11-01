@@ -29,6 +29,14 @@ except ImportError:
 from .ai.providers import generate_object, trim_prompt, parse_response
 from .prompt import system_prompt
 
+# Try to import retrieval processor (optional enhancement)
+try:
+    from .retrieval_processor import process_search_results
+    RETRIEVAL_PROCESSOR_AVAILABLE = True
+except ImportError:
+    RETRIEVAL_PROCESSOR_AVAILABLE = False
+    print("Note: Retrieval processor not available. Install sentence-transformers for enhanced search ranking.")
+
 
 def log(*args):
     """Helper function for consistent logging"""
@@ -375,6 +383,27 @@ async def deep_research(
                             continue
                 
                 log(f"Found {len(new_urls)} URLs, successfully scraped {len(scraped_contents)} pages")
+                
+                # Apply retrieval post-processing if available
+                if RETRIEVAL_PROCESSOR_AVAILABLE and scraped_contents:
+                    try:
+                        # Get settings from environment or use defaults
+                        use_reranking = os.getenv("USE_RERANKING", "true").lower() == "true"
+                        dedup_threshold = float(os.getenv("DEDUP_THRESHOLD", "0.9"))
+                        min_year = int(os.getenv("MIN_YEAR", "2020"))
+                        
+                        if use_reranking:
+                            log(f"Applying retrieval post-processing...")
+                            scraped_contents, stats = process_search_results(
+                                results=scraped_contents,
+                                query=serp_query.query,
+                                dedup_threshold=dedup_threshold,
+                                min_year=min_year
+                            )
+                            log(f"Post-processing: {stats.initial_count} → {stats.after_freshness} documents")
+                    except Exception as e:
+                        log(f"Warning: Retrieval post-processing failed: {e}")
+                        # Continue with original results
                 
                 new_breadth = max(1, breadth // 2)
                 new_depth = depth - 1
