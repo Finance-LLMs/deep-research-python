@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Research Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🔬 Deep Research Dashboard</h1>
+            <p class="subtitle">AI-powered iterative research assistant</p>
+        </header>
+
+        <!-- Research Form -->
+        <div class="research-form" id="researchForm">
+            <div class="form-group">
+                <label for="query">Research Query</label>
+                <textarea 
+                    id="query" 
+                    placeholder="What would you like to research?"
+                    rows="3"
+                ></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="breadth">
+                        Breadth
+                        <span class="help-text">Number of queries per iteration</span>
+                    </label>
+                    <input 
+                        type="number" 
+                        id="breadth" 
+                        min="1" 
+                        max="20" 
+                        value="4"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="depth">
+                        Depth
+                        <span class="help-text">Number of research iterations</span>
+                    </label>
+                    <input 
+                        type="number" 
+                        id="depth" 
+                        min="1" 
+                        max="10" 
+                        value="2"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="mode">
+                        Output Mode
+                        <span class="help-text">Type of output to generate</span>
+                    </label>
+                    <select id="mode">
+                        <option value="report">Detailed Report</option>
+                        <option value="answer">Concise Answer</option>
+                    </select>
+                </div>
+            </div>
+
+            <button id="startBtn" class="btn btn-primary">
+                Start Research
+            </button>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="progress-section" id="progressSection" style="display: none;">
+            <h2>Research Progress</h2>
+            
+            <div class="progress-stats">
+                <div class="stat-card">
+                    <div class="stat-label">Depth</div>
+                    <div class="stat-value">
+                        <span id="currentDepth">0</span> / <span id="totalDepth">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Breadth</div>
+                    <div class="stat-value">
+                        <span id="currentBreadth">0</span> / <span id="totalBreadth">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Queries</div>
+                    <div class="stat-value">
+                        <span id="completedQueries">0</span> / <span id="totalQueries">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="current-query">
+                <strong>Current Query:</strong>
+                <span id="currentQuery">Initializing...</span>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="log-container" id="logContainer">
+                <h3>Activity Log</h3>
+                <div class="log-content" id="logContent"></div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <h2>Research Results</h2>
+            
+            <div class="tabs">
+                <button class="tab active" data-tab="output">Output</button>
+                <button class="tab" data-tab="learnings">Learnings</button>
+                <button class="tab" data-tab="sources">Sources</button>
+                <button class="tab" data-tab="feedback">Feedback</button>
+            </div>
+
+            <div class="tab-content active" id="tab-output">
+                <div class="result-content" id="outputContent"></div>
+                <button class="btn btn-secondary" onclick="downloadMarkdown()">
+                    Download as Markdown
+                </button>
+            </div>
+
+            <div class="tab-content" id="tab-learnings">
+                <ul class="learnings-list" id="learningsList"></ul>
+            </div>
+
+            <div class="tab-content" id="tab-sources">
+                <ul class="sources-list" id="sourcesList"></ul>
+            </div>
+
+            <div class="tab-content" id="tab-feedback">
+                <div class="feedback-content" id="feedbackContent">
+                    <p class="muted">No feedback available</p>
+                </div>
+            </div>
+
+            <button id="newResearchBtn" class="btn btn-primary">
+                Start New Research
+            </button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
