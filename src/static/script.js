@@ -5,7 +5,8 @@ let results = {
     output: '',
     learnings: [],
     sources: [],
-    feedback: null
+    feedback: null,
+    learnings_with_provenance: []
 };
 
 // DOM elements
@@ -176,6 +177,7 @@ function handleComplete(data) {
     results.output = data.output;
     results.learnings = data.learnings;
     results.sources = data.visited_urls;
+    results.learnings_with_provenance = data.learnings_with_provenance || [];
 
     addLog('Research complete!', 'success');
 
@@ -193,14 +195,68 @@ function displayResults() {
     const outputContent = document.getElementById('outputContent');
     outputContent.innerHTML = marked.parse(results.output);
 
-    // Learnings tab
+    // Learnings tab - now with provenance if available
     const learningsList = document.getElementById('learningsList');
     learningsList.innerHTML = '';
-    results.learnings.forEach((learning, index) => {
-        const li = document.createElement('li');
-        li.innerHTML = `<strong>${index + 1}.</strong> ${learning}`;
-        learningsList.appendChild(li);
-    });
+    
+    if (results.learnings_with_provenance && results.learnings_with_provenance.length > 0) {
+        // Display learnings with provenance
+        results.learnings_with_provenance.forEach((provenance, index) => {
+            const li = document.createElement('li');
+            li.className = 'learning-with-provenance';
+            
+            // Convert \n to <br> tags for proper line breaks
+            const learningText = provenance.learning.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+            
+            let html = `
+                <div class="learning-text">
+                    <strong>${index + 1}.</strong> ${learningText}
+                </div>
+            `;
+            
+            if (provenance.supporting_snippet) {
+                const snippetText = provenance.supporting_snippet.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+                html += `
+                    <div class="provenance-info">
+                        <div class="provenance-snippet">
+                            <strong>📄 Supporting Evidence:</strong><br>
+                            <em>"${snippetText}"</em>
+                        </div>
+                        <div class="provenance-metadata">
+                            <a href="${provenance.source_url}" target="_blank" rel="noopener noreferrer" class="source-link">
+                                � View Source Document
+                            </a>
+                            <span class="confidence-score">✓ Confidence: ${(provenance.confidence_score * 100).toFixed(0)}%</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Show source URL even without snippet
+                html += `
+                    <div class="provenance-info">
+                        <div class="provenance-metadata">
+                            <a href="${provenance.source_url}" target="_blank" rel="noopener noreferrer" class="source-link">
+                                🔗 View Source Document
+                            </a>
+                            <span class="confidence-score" style="opacity: 0.6;">⚠️ No supporting snippet found</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            li.innerHTML = html;
+            learningsList.appendChild(li);
+        });
+    } else {
+        // Fallback to regular learnings display
+        results.learnings.forEach((learning, index) => {
+            const li = document.createElement('li');
+            // Convert \n to <br> for proper line breaks
+            const learningText = learning.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+            li.innerHTML = `<strong>${index + 1}.</strong> ${learningText}`;
+            learningsList.appendChild(li);
+        });
+    }
 
     // Sources tab
     const sourcesList = document.getElementById('sourcesList');
@@ -266,7 +322,8 @@ function resetForm() {
         output: '',
         learnings: [],
         sources: [],
-        feedback: null
+        feedback: null,
+        learnings_with_provenance: []
     };
     
     // Clear session

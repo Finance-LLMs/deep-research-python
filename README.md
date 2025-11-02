@@ -78,6 +78,7 @@ flowchart TB
 - **Multiple AI Providers**: Support for NVIDIA, OpenAI, Fireworks AI, and custom/local models
 - **API Server**: Optional REST API for integration with other applications
 - **🆕 Advanced Retrieval Processing**: Semantic re-ranking, deduplication, and freshness filtering for higher quality results ([See details](RETRIEVAL_PROCESSOR.md))
+- **🆕 Provenance Tracking**: Transparent source attribution with supporting snippets and confidence scores for every learning ([See details](PROVENANCE_TRACKING.md))
 
 ## Requirements
 
@@ -269,7 +270,9 @@ curl -X POST http://localhost:3051/api/research \
   -d '{"query": "Tesla stock performance 2025", "breadth": 3, "depth": 2}'
 ```
 
-## Retrieval Post-Processing 🆕
+## Advanced Features
+
+### Retrieval Post-Processing 🆕
 
 Enhance search quality with semantic re-ranking, deduplication, and freshness filtering:
 
@@ -292,6 +295,56 @@ MIN_YEAR=2020            # Minimum year for documents (default: 2020)
 - Better research outcomes
 
 See [RETRIEVAL_PROCESSOR.md](RETRIEVAL_PROCESSOR.md) for detailed documentation.
+
+### Provenance Tracking 🆕
+
+Every research finding now includes transparent source attribution:
+
+**Features:**
+- **Source URLs**: Direct links to original documents
+- **Supporting Snippets**: Exact 1-2 sentence excerpts that support each learning
+- **Confidence Scores**: Similarity scores showing how well learnings match sources
+- **Matched Terms**: Key terms found in supporting evidence
+
+**Benefits:**
+- **Transparency**: See exactly where information came from
+- **Verifiability**: Click through to verify original sources
+- **Trust**: Confidence scores indicate reliability
+- **Accountability**: Clear attribution prevents hallucinations
+
+**Example Output:**
+```markdown
+### Learning #1
+**Finding:** Python 3.12 introduces improved error messages
+
+**Source:** "Python 3.12 now provides more detailed error messages..."
+**From:** https://docs.python.org/3.12/whatsnew
+**Confidence:** 95%
+```
+
+**Dashboard Integration:**
+
+The web dashboard automatically displays provenance information in the Learnings tab:
+- Expandable provenance sections for each learning
+- "View Source" links to original documents
+- Visual confidence score indicators
+
+**Usage Example:**
+```python
+from src.deep_research import deep_research
+
+result = await deep_research("Your query", breadth=4, depth=2)
+
+# Access provenance data
+if result.learnings_with_provenance:
+    for provenance in result.learnings_with_provenance:
+        print(f"Learning: {provenance['learning']}")
+        print(f"Source: {provenance['source_url']}")
+        print(f"Evidence: {provenance['supporting_snippet']}")
+        print(f"Confidence: {provenance['confidence_score']:.1%}")
+```
+
+See [PROVENANCE_TRACKING.md](PROVENANCE_TRACKING.md) for comprehensive documentation and examples.
 
 ## Environment Variables
 
