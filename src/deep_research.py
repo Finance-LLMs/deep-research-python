@@ -43,6 +43,27 @@ def log(*args):
     print(*args)
 
 
+def _unescape_escapes(text: Optional[str]) -> Optional[str]:
+    """Convert common escaped sequences (e.g. "\\n") into actual characters.
+
+    Tries a unicode-escape decode first, falls back to manual replacements.
+    This fixes cases where generated text contains literal backslash sequences
+    that should be rendered as newlines/tabs when displayed or saved.
+    """
+    if text is None:
+        return None
+    if not isinstance(text, str):
+        return text
+    try:
+        # unicode_escape will convert sequences like \n, \t, etc. into actual
+        # control characters. Wrap in bytes to avoid accidental changes when
+        # the string already contains real unicode escapes.
+        return bytes(text, "utf-8").decode("unicode_escape")
+    except Exception:
+        # Fallback: do manual replacements for the most common escapes
+        return text.replace('\\n', '\n').replace('\\r', '\r').replace('\\t', '\t').replace('\\\\', '\\')
+
+
 class ResearchProgress(TypedDict):
     current_depth: int
     total_depth: int
@@ -260,10 +281,10 @@ async def write_final_report(
         result = parse_response(response)
         
         report = result.get("report_markdown", "")
-        
+
         # Append sources
         urls_section = f"\n\n## Sources\n\n" + "\n".join([f"- {url}" for url in visited_urls])
-        
+
         # Append provenance if available
         if learnings_with_provenance:
             try:
@@ -271,16 +292,23 @@ async def write_final_report(
                 # Convert dicts back to ProvenanceRecord objects
                 provenance_objs = [ProvenanceRecord(**p) for p in learnings_with_provenance]
                 provenance_section = format_learnings_with_provenance(
-                    provenance_objs, 
+                    provenance_objs,
                     format='markdown'
                 )
+                # Ensure any escaped sequences (like "\\n") are converted to real
+                # newlines before returning/saving the report so PDFs and UI render
+                # line breaks properly.
+                provenance_section = _unescape_escapes(provenance_section) or ""
+                report = _unescape_escapes(report) or ""
+                urls_section = _unescape_escapes(urls_section) or ""
+
                 report = report + "\n\n---\n\n" + provenance_section + urls_section
             except Exception as e:
                 log(f"Warning: Could not format provenance: {e}")
                 report = report + urls_section
         else:
-            report = report + urls_section
-            
+            report = _unescape_escapes(report + urls_section) or ""
+
         return report
     
     except Exception as e:
@@ -321,6 +349,9 @@ async def write_final_answer(
         
         answer = result.get("exact_answer", "")
         log(f"DEBUG: Final answer extracted: '{answer}'")
+        # Sanitize escaped sequences so the UI and saved files show proper
+        # newlines instead of literal "\\n" text.
+        answer = _unescape_escapes(answer) or ""
         
         return answer
     
