@@ -224,7 +224,7 @@ function displayResults() {
                         </div>
                         <div class="provenance-metadata">
                             <a href="${provenance.source_url}" target="_blank" rel="noopener noreferrer" class="source-link">
-                                � View Source Document
+                                🔗 View Source Document
                             </a>
                             <span class="confidence-score">✓ Confidence: ${(provenance.confidence_score * 100).toFixed(0)}%</span>
                         </div>
@@ -238,7 +238,6 @@ function displayResults() {
                             <a href="${provenance.source_url}" target="_blank" rel="noopener noreferrer" class="source-link">
                                 🔗 View Source Document
                             </a>
-                            <span class="confidence-score" style="opacity: 0.6;">⚠️ No supporting snippet found</span>
                         </div>
                     </div>
                 `;
