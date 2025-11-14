@@ -193,7 +193,8 @@ function handleComplete(data) {
 function displayResults() {
     // Output tab
     const outputContent = document.getElementById('outputContent');
-    outputContent.innerHTML = marked.parse(results.output);
+    let cleanedOutput = results.output.replace(/\\n/g, '\n');
+    outputContent.innerHTML = marked.parse(cleanedOutput);
 
     // Learnings tab - now with provenance if available
     const learningsList = document.getElementById('learningsList');
@@ -340,7 +341,8 @@ function downloadMarkdown() {
     const filename = mode === 'report' ? 'research_report.md' : 'research_answer.md';
     
     let content = `# ${query}\n\n`;
-    content += results.output;
+    const cleanedOutput = results.output.replace(/\\n/g, "\n");
+    content += cleanedOutput;
     
     // Add sources section when downloading
     if (results.sources && results.sources.length > 0) {
