@@ -1,316 +1,180 @@
-# Open Deep Research - Python
+# Deep Research Python
 
-An AI-powered research assistant that performs iterative, deep research on any topic by combining search engines, web scraping, and large language models.
+An AI-powered research assistant that performs iterative, deep research on any topic by combining web search, content analysis, and large language models.
 
-**🐍 This is the Python implementation of the [deep-research](https://github.com/dzhng/deep-research) project.**
+**🔬 Simple yet powerful research automation in Python**
 
-The goal of this repo is to provide the simplest implementation of a deep research agent - e.g. an agent that can refine its research direction over time and deep dive into a topic. Goal is to keep the repo size at <500 LoC so it is easy to understand and build on top of.
-
-**🐍 This repository contains the Python implementation. For the Node.js/TypeScript version, see the original repository.**
-
-## How It Works
-
-```mermaid
-flowchart TB
-    subgraph Input
-        Q[User Query]
-        B[Breadth Parameter]
-        D[Depth Parameter]
-    end
-
-    DR[Deep Research] -->
-    SQ[SERP Queries] -->
-    PR[Process Results]
-
-    subgraph Results[Results]
-        direction TB
-        NL((Learnings))
-        ND((Directions))
-    end
-
-    PR --> NL
-    PR --> ND
-
-    DP{depth > 0?}
-
-    RD["Next Direction:
-    - Prior Goals
-    - New Questions
-    - Learnings"]
-
-    MR[Markdown Report]
-
-    %% Main Flow
-    Q & B & D --> DR
-
-    %% Results to Decision
-    NL & ND --> DP
-
-    %% Circular Flow
-    DP -->|Yes| RD
-    RD -->|New Context| DR
-
-    %% Final Output
-    DP -->|No| MR
-
-    %% Styling
-    classDef input fill:#7bed9f,stroke:#2ed573,color:black
-    classDef process fill:#70a1ff,stroke:#1e90ff,color:black
-    classDef recursive fill:#ffa502,stroke:#ff7f50,color:black
-    classDef output fill:#ff4757,stroke:#ff6b81,color:black
-    classDef results fill:#a8e6cf,stroke:#3b7a57,color:black
-
-    class Q,B,D input
-    class DR,SQ,PR process
-    class DP,RD recursive
-    class MR output
-    class NL,ND results
-```
+The goal is to provide the simplest implementation of a deep research agent that can refine its research direction over time and dive deep into any topic. Optimized for ease of use and understanding.
 
 ## Features
 
-- **Iterative Research**: Performs deep research by iteratively generating search queries, processing results, and diving deeper based on findings
-- **Intelligent Query Generation**: Uses LLMs to generate targeted search queries based on research goals and previous findings
-- **Depth & Breadth Control**: Configurable parameters to control how wide (breadth) and deep (depth) the research goes
-- **Smart Follow-up**: Generates follow-up questions to better understand research needs
-- **Comprehensive Reports**: Produces detailed markdown reports with findings and sources
-- **Concurrent Processing**: Handles multiple searches and result processing in parallel for efficiency
-- **Multiple AI Providers**: Support for NVIDIA, OpenAI, Fireworks AI, and custom/local models
-- **API Server**: Optional REST API for integration with other applications
-- **🆕 Advanced Retrieval Processing**: Semantic re-ranking, deduplication, and freshness filtering for higher quality results ([See details](RETRIEVAL_PROCESSOR.md))
-- **🆕 Provenance Tracking**: Transparent source attribution with supporting snippets and confidence scores for every learning ([See details](PROVENANCE_TRACKING.md))
+- **🔄 Iterative Research**: Performs deep research by iteratively generating search queries, processing results, and diving deeper based on findings
+- **🎯 Intelligent Query Generation**: Uses LLMs to generate targeted search queries based on research goals and previous findings
+- **⚙️ Depth & Breadth Control**: Configurable parameters to control research scope (breadth: 1-20, depth: 1-10)
+- **🔮 Smart Follow-up**: Generates follow-up questions to better understand research needs
+- **📊 Web Dashboard**: Beautiful web interface with real-time progress tracking and organized result tabs
+- **🔗 API Server**: REST API for integration with other applications
+- **🚀 Concurrent Processing**: Handles multiple searches and result processing in parallel
+- **🤖 Multiple AI Providers**: Support for NVIDIA, OpenAI, Fireworks AI, OpenRouter, and local models
+- **✨ Advanced Features**:
+  - **Semantic Re-ranking**: Orders results by relevance using sentence transformers
+  - **Smart Deduplication**: Removes near-duplicate content automatically  
+  - **Freshness Filtering**: Prioritizes recent information (configurable)
+  - **Provenance Tracking**: Transparent source attribution with supporting snippets and confidence scores
 
-## Requirements
+## Quick Start
 
-- **Python 3.8+**
-- API keys for:
-  - **Firecrawl API** (for web search and content extraction)
-  - One of the following AI providers:
-    - **OpenRouter API** (recommended - access to free models)
-    - **NVIDIA API** (access to Llama 3.1 70B, DeepSeek R1)
-    - **Fireworks AI** (for DeepSeek R1)
-    - **OpenAI API** (for GPT-4o-mini)
-    - **Custom/Local** (for self-hosted models)
+### 1. Installation
 
-## Setup
-
-### Python Installation
-
-1. Clone the repository:
 ```bash
 git clone https://github.com/Finance-LLMs/deep-research-python.git
 cd deep-research-python
-```
-
-2. Install dependencies:
-```bash
 pip install -r requirements.txt
 ```
 
-3. Set up environment variables in a `.env.local` file:
+### 2. Configuration
+
+Create a `.env.local` file with your API keys:
 
 ```bash
+# Required: Web search and scraping
 FIRECRAWL_KEY="your_firecrawl_key"
-# If you want to use your self-hosted Firecrawl, add the following below:
-# FIRECRAWL_BASE_URL="http://localhost:3002"
 
-# OpenRouter API (openrouter.ai)
-OPEN_ROUTER_KEY="your_openrouter_key"
+# AI Provider (choose one)
+OPEN_ROUTER_KEY="your_openrouter_key"        # free models available
+# NVIDIA_API_KEY="your_nvidia_api_key"       # Alternative - Llama 3.1 70B, DeepSeek R1
+# OPENAI_KEY="your_openai_key"               # Alternative - GPT-4o-mini
+# FIREWORKS_KEY="your_fireworks_key"         # Alternative - DeepSeek R1
 
-# Alternative: NVIDIA API (build.nvidia.com)
-# NVIDIA_API_KEY="your_nvidia_api_key"
-
-# Alternative: OpenAI API (fallback)
-# OPENAI_KEY="your_openai_key"
-
-# Alternative: Fireworks AI (for DeepSeek R1)
-# FIREWORKS_KEY="your_fireworks_key"
+# Optional: Advanced features
+USE_RERANKING=true        # Enable semantic re-ranking (default: true)
+DEDUP_THRESHOLD=0.9       # Deduplication threshold (default: 0.9)
+MIN_YEAR=2020            # Minimum year for documents (default: 2020)
 ```
 
-### Docker Setup
+### 3. Usage Options
 
-1. Clone the repository
-2. Rename `.env.example` to `.env.local` and set your API keys
-
-3. Build the Docker image:
+#### Web Dashboard (Recommended) 🚀
 ```bash
-docker build -t deep-research-python .
+python run_dashboard.py
+# Open http://localhost:5000
 ```
 
-4. Run the Docker container:
+#### Command Line
 ```bash
-docker run -p 3051:3051 --env-file .env.local deep-research-python
+python -m src.run
 ```
 
-Or use Docker Compose:
+#### API Server
 ```bash
-docker compose up -d
+python -m src.api
+# Server starts on port 3051
 ```
 
-## Model Priority
+## AI Model Providers
 
 The system automatically selects the best available model in this order:
 
 1. **Custom Model** - if `CUSTOM_MODEL` and `OPENAI_ENDPOINT` are set
-2. **DeepSeek R1** (OpenRouter) - if `OPEN_ROUTER_KEY` is set ⭐ **Recommended**
+2. **DeepSeek R1** (OpenRouter) - if `OPEN_ROUTER_KEY` is set
 3. **NVIDIA Llama 3.1 70B** - if `NVIDIA_API_KEY` is set
 4. **DeepSeek R1** (Fireworks) - if `FIREWORKS_KEY` is set
 5. **GPT-4o-mini** (OpenAI) - Fallback option
 
-### NVIDIA API (Recommended)
+### Getting API Keys
 
-NVIDIA's build.nvidia.com provides access to state-of-the-art models including:
+**OpenRouter**
+- Visit [openrouter.ai](https://openrouter.ai)
+- Free tier includes access to many models
+- Excellent DeepSeek R1 performance
 
-- **Llama 3.1 70B**: Strong general-purpose model, excellent for research
-- **DeepSeek R1**: Excellent reasoning capabilities, perfect for research tasks
-- **Nemotron 70B**: NVIDIA's research-optimized model
+**NVIDIA API**
+- Visit [build.nvidia.com](https://build.nvidia.com)
+- Free access to Llama 3.1 70B and DeepSeek R1
+- Great for research applications
 
-To get an API key:
-1. Visit [build.nvidia.com](https://build.nvidia.com)
-2. Sign up for a free account
-3. Generate an API key
-4. Add it to your `.env.local` as `NVIDIA_API_KEY`
-
-### Local/Custom Models
-
-To use local LLM or custom OpenAI-compatible APIs, set these environment variables:
-
+**Local/Custom Models**
 ```bash
-OPENAI_ENDPOINT="http://localhost:1234/v1"  # Your local server endpoint
-CUSTOM_MODEL="your_model_name"              # Model name loaded in your server
-OPENAI_KEY="your_api_key_if_needed"         # API key if required
-```
-
-These will take the highest priority if set.
-
-### DeepSeek R1
-
-Deep research performs excellently on R1! You can access DeepSeek R1 through:
-
-#### NVIDIA (Recommended)
-```bash
-NVIDIA_API_KEY="your_nvidia_api_key"
-```
-
-#### Fireworks AI
-```bash
-FIREWORKS_KEY="your_fireworks_api_key"
+OPENAI_ENDPOINT="http://localhost:1234/v1"
+CUSTOM_MODEL="your_model_name"
+OPENAI_KEY="your_api_key_if_needed"
 ```
 
 ## Usage
 
 ### Web Dashboard (Recommended) 🚀
 
-The easiest way to use Deep Research is through the interactive web dashboard:
+Start the interactive web dashboard:
 
 ```bash
 python run_dashboard.py
+# Open http://localhost:5000
 ```
 
-Or directly:
-
-```bash
-python -m src.app
-```
-
-Then open your browser to `http://localhost:5000`
-
-Features:
-- **Interactive UI**: User-friendly web interface for research
-- **Real-time Progress**: Live updates on research progress with visual indicators
-- **Result Visualization**: View results in organized tabs (Output, Learnings, Sources, Feedback)
-- **Download Reports**: Export research reports as Markdown files
-- **Customizable Parameters**: Easily adjust breadth, depth, and output mode
+**Features:**
+- **Interactive UI**: User-friendly web interface
+- **Real-time Progress**: Live updates with visual progress bars
+- **Organized Results**: Separate tabs for Output, Learnings, Sources, and Feedback
+- **Download Reports**: Export as Markdown files
+- **Provenance Display**: See supporting snippets and confidence scores for each learning
 
 ### Command Line Interface
-
-Run the interactive research assistant:
 
 ```bash
 python -m src.run
 ```
 
-You'll be prompted to:
-
-1. Enter your research query
-2. Specify research breadth (recommended: 2-10, default: 4)
-3. Specify research depth (recommended: 1-5, default: 2)
-4. Choose between generating a report or a specific answer
-5. Answer follow-up questions to refine the research direction
+You'll be prompted to enter your research query and configure parameters:
+- **Breadth**: Number of search queries per iteration (recommended: 2-10, default: 4)
+- **Depth**: Number of research iterations (recommended: 1-5, default: 2)
+- **Mode**: Generate report or specific answer
 
 ### API Server
 
-Start the REST API server:
-
 ```bash
 python -m src.api
+# Server starts on port 3051
 ```
 
-The server will start on port 3051. Available endpoints:
+**Endpoints:**
 
-#### POST `/api/research`
-Perform research and get a concise answer.
-
-#### POST `/api/generate-report`
-Perform research and generate a detailed report.
-
-Both endpoints accept:
-```json
-{
-  "query": "Your research question",
-  "breadth": 4,  // optional, default 4
-  "depth": 2     // optional, default 2
-}
-```
-
-Example request:
 ```bash
+# Research with concise answer
 curl -X POST http://localhost:3051/api/research \
   -H "Content-Type: application/json" \
   -d '{"query": "Tesla stock performance 2025", "breadth": 3, "depth": 2}'
+
+# Generate detailed report
+curl -X POST http://localhost:3051/api/generate-report \
+  -H "Content-Type: application/json" \
+  -d '{"query": "AI trends 2025", "breadth": 4, "depth": 2}'
 ```
 
 ## Advanced Features
 
-### Retrieval Post-Processing 🆕
+### Enhanced Search Quality
 
-Enhance search quality with semantic re-ranking, deduplication, and freshness filtering:
+The system includes advanced retrieval processing for higher quality results:
 
+- **Semantic Re-ranking**: Orders search results by relevance using AI embeddings
+- **Smart Deduplication**: Automatically removes near-duplicate content (configurable threshold)
+- **Freshness Filtering**: Prioritizes recent information while filtering outdated content
+
+**Configuration:**
 ```bash
-# Enable in .env.local
-USE_RERANKING=true        # Enable post-processing (default: true)
-DEDUP_THRESHOLD=0.9       # Deduplication threshold (default: 0.9)
-MIN_YEAR=2020            # Minimum year for documents (default: 2020)
+USE_RERANKING=true        # Enable processing (default: true)
+DEDUP_THRESHOLD=0.9       # Similarity threshold (default: 0.9)
+MIN_YEAR=2020            # Minimum document year (default: 2020)
 ```
 
-**Features:**
-- **Semantic Re-ranking**: Orders results by relevance using sentence transformers
-- **Deduplication**: Removes near-duplicate content (configurable threshold)
-- **Freshness Filtering**: Keeps only recent documents (configurable min year)
+### Provenance Tracking
 
-**Benefits:**
-- Higher quality search results
-- Fewer redundant documents
-- More current information
-- Better research outcomes
+Every research finding includes transparent source attribution:
 
-See [RETRIEVAL_PROCESSOR.md](RETRIEVAL_PROCESSOR.md) for detailed documentation.
-
-### Provenance Tracking 🆕
-
-Every research finding now includes transparent source attribution:
-
-**Features:**
 - **Source URLs**: Direct links to original documents
-- **Supporting Snippets**: Exact 1-2 sentence excerpts that support each learning
-- **Confidence Scores**: Similarity scores showing how well learnings match sources
+- **Supporting Snippets**: Exact 1-2 sentence excerpts supporting each learning
+- **Confidence Scores**: Similarity scores showing reliability (0-100%)
 - **Matched Terms**: Key terms found in supporting evidence
-
-**Benefits:**
-- **Transparency**: See exactly where information came from
-- **Verifiability**: Click through to verify original sources
-- **Trust**: Confidence scores indicate reliability
-- **Accountability**: Clear attribution prevents hallucinations
 
 **Example Output:**
 ```markdown
@@ -322,20 +186,12 @@ Every research finding now includes transparent source attribution:
 **Confidence:** 95%
 ```
 
-**Dashboard Integration:**
-
-The web dashboard automatically displays provenance information in the Learnings tab:
-- Expandable provenance sections for each learning
-- "View Source" links to original documents
-- Visual confidence score indicators
-
-**Usage Example:**
+**Access Provenance Data:**
 ```python
 from src.deep_research import deep_research
 
 result = await deep_research("Your query", breadth=4, depth=2)
 
-# Access provenance data
 if result.learnings_with_provenance:
     for provenance in result.learnings_with_provenance:
         print(f"Learning: {provenance['learning']}")
@@ -344,100 +200,113 @@ if result.learnings_with_provenance:
         print(f"Confidence: {provenance['confidence_score']:.1%}")
 ```
 
-See [PROVENANCE_TRACKING.md](PROVENANCE_TRACKING.md) for comprehensive documentation and examples.
+## Configuration
 
-## Environment Variables
+| Variable | Description | Default | Options |
+|----------|-------------|---------|---------|
+| **Core APIs** | | | |
+| `FIRECRAWL_KEY` | Firecrawl API key (required) | - | Your API key |
+| `FIRECRAWL_BASE_URL` | Custom Firecrawl endpoint | `https://api.firecrawl.dev` | URL |
+| `OPEN_ROUTER_KEY` | OpenRouter API key | - | Your API key |
+| `NVIDIA_API_KEY` | NVIDIA API key | - | Your API key |
+| `OPENAI_KEY` | OpenAI API key | - | Your API key |
+| `FIREWORKS_KEY` | Fireworks AI API key | - | Your API key |
+| **Local Models** | | | |
+| `CUSTOM_MODEL` | Custom model name | - | Model name |
+| `OPENAI_ENDPOINT` | Custom endpoint URL | - | http://localhost:1234/v1 |
+| **Search Quality** | | | |
+| `USE_RERANKING` | Enable retrieval processing | `true` | true/false |
+| `DEDUP_THRESHOLD` | Deduplication threshold | `0.9` | 0.0-1.0 |
+| `MIN_YEAR` | Minimum document year | `2020` | 2000-2025 |
+| **Performance** | | | |
+| `FIRECRAWL_CONCURRENCY` | Concurrent requests | `2` | 1-10 |
+| `CONTEXT_SIZE` | Max context size | `128000` | Number |
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `FIRECRAWL_KEY` | Your Firecrawl API key | Required |
-| `FIRECRAWL_BASE_URL` | Custom Firecrawl endpoint | `https://api.firecrawl.dev` |
-| `FIRECRAWL_CONCURRENCY` | Concurrency limit for scraping | `2` |
-| `NVIDIA_API_KEY` | NVIDIA API key | Optional |
-| `OPENAI_KEY` | OpenAI API key | Optional |
-| `FIREWORKS_KEY` | Fireworks AI API key | Optional |
-| `CUSTOM_MODEL` | Custom model name for local endpoints | Optional |
-| `OPENAI_ENDPOINT` | Custom OpenAI-compatible endpoint | Optional |
-| `CONTEXT_SIZE` | Maximum context size for prompts | `128000` |
-| `USE_RERANKING` | Enable retrieval post-processing | `true` |
-| `DEDUP_THRESHOLD` | Similarity threshold for deduplication | `0.9` |
-| `MIN_YEAR` | Minimum year for freshness filtering | `2020` |
+## Docker Setup
 
-## How the Research Process Works
+1. Create `.env.local` file with your API keys
+2. Build and run:
 
-1. **Initial Setup**
-   - Takes user query and research parameters (breadth & depth)
-   - Generates follow-up questions to understand research needs better
+```bash
+docker build -t deep-research-python .
+docker run -p 3051:3051 --env-file .env.local deep-research-python
+```
 
-2. **Deep Research Process**
-   - Generates multiple SERP queries based on research goals
-   - Searches the web using Firecrawl API
-   - Scrapes and processes search results to extract key learnings
-   - Generates follow-up research directions
+Or with Docker Compose:
+```bash
+docker compose up -d
+```
 
-3. **Recursive Exploration**
-   - If depth > 0, takes new research directions and continues exploration
-   - Each iteration builds on previous learnings
-   - Maintains context of research goals and findings
+## How It Works
 
-4. **Report Generation**
-   - Compiles all findings into a comprehensive markdown report
-   - Includes all sources and references
-   - Organizes information in a clear, readable format
+The research process follows these steps:
 
-## Concurrency and Rate Limiting
+1. **Query Analysis** - Takes user query and generates follow-up questions for refinement
+2. **Search Generation** - Creates multiple targeted SERP queries based on research goals  
+3. **Content Retrieval** - Searches web using Firecrawl API and scrapes relevant pages
+4. **Quality Enhancement** - Applies semantic re-ranking, deduplication, and freshness filtering
+5. **Learning Extraction** - Analyzes content to extract key insights and learnings
+6. **Provenance Tracking** - Links each learning to supporting source snippets with confidence scores
+7. **Iterative Deepening** - Generates new research directions and repeats if depth > 0
+8. **Report Generation** - Compiles findings into comprehensive markdown reports
+
+```mermaid
+flowchart TB
+    Q[User Query] --> DR[Deep Research]
+    DR --> SQ[Generate SERP Queries]
+    SQ --> SR[Search & Scrape]
+    SR --> QE[Quality Enhancement]
+    QE --> LE[Extract Learnings]
+    LE --> PT[Track Provenance]
+    PT --> D{Depth > 0?}
+    D -->|Yes| RD[Generate Directions]
+    RD --> DR
+    D -->|No| R[Generate Report]
+```
+
+## Performance & Rate Limits
 
 ### Firecrawl Rate Limits
 
-- **Free tier**: Limited requests per minute
-- **Paid tier**: Higher rate limits
-- **Self-hosted**: No rate limits
-
-Configure concurrency based on your Firecrawl plan:
+Configure concurrency based on your plan:
 
 ```bash
-# For free tier (to avoid rate limits)
+# Free tier
 FIRECRAWL_CONCURRENCY=1
 
-# For paid tier or self-hosted
+# Paid tier or self-hosted
 FIRECRAWL_CONCURRENCY=5
 ```
 
 ### Performance Tips
 
-1. **Start with smaller parameters**: Use `breadth=2, depth=1` for testing
-2. **Monitor rate limits**: Watch for 429 errors and adjust concurrency
-3. **Use faster models**: NVIDIA models are generally faster than others
-4. **Self-host Firecrawl**: For unlimited scraping without rate limits
+- **Start small**: Use `breadth=2, depth=1` for testing
+- **Monitor rate limits**: Watch for 429 errors and adjust concurrency
+- **Use faster models**: NVIDIA models are generally quicker
+- **Self-host Firecrawl**: For unlimited scraping
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **"No model found" error**: Ensure at least one AI provider API key is set
-2. **Rate limit errors**: Reduce `FIRECRAWL_CONCURRENCY` or upgrade Firecrawl plan
-3. **Empty search results**: Check Firecrawl API key and network connectivity
-4. **Import errors**: Ensure all dependencies are installed with `pip install -r requirements.txt`
+| Issue | Solution |
+|-------|----------|
+| "No model found" error | Ensure at least one AI provider API key is set |
+| Rate limit errors | Reduce `FIRECRAWL_CONCURRENCY` or upgrade Firecrawl plan |
+| Empty search results | Check Firecrawl API key and connectivity |
+| Import/dependency errors | Run `pip install -r requirements.txt` |
+| Slow processing | Enable GPU, use smaller parameters, or faster model |
 
-### Debug Mode
+### Enable Debug Output
 
-Add debug output by modifying the logging in `src/deep_research.py`:
+Modify logging in `src/deep_research.py`:
 
 ```python
 def log(*args):
     print(*args)  # Enable all debug output
 ```
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request. Areas for improvement:
-
-- Additional AI provider integrations
-- Enhanced search result processing
-- Better error handling and retry logic
-- UI improvements for the CLI interface
-- More comprehensive test coverage
 
 ## License
 
-MIT License - feel free to use and modify as needed.
+This project is licensed under [MIT LICENSE](LICENSE).
