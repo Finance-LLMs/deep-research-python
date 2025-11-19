@@ -94,7 +94,8 @@ Follow-up Questions and Answers:
             report = await write_final_report(
                 prompt=combined_query,
                 learnings=result.learnings,
-                visited_urls=result.visited_urls
+                visited_urls=result.visited_urls,
+                learnings_with_provenance=result.learnings_with_provenance
             )
             
             with open("report.md", "w", encoding="utf-8") as f:

@@ -377,6 +377,99 @@ body {
     border-left: 4px solid var(--primary-color);
 }
 
+/* Provenance styling */
+.learning-with-provenance {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.learning-text {
+    font-size: 1rem;
+    line-height: 1.8;
+    padding-bottom: 0.5rem;
+}
+
+.provenance-info {
+    background: #f8f9fa;
+    border: 1px solid #e0e6ed;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 0.75rem;
+    margin-left: 1.5rem;
+}
+
+.provenance-snippet {
+    font-size: 0.9rem;
+    color: #495057;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    background: white;
+    border-left: 4px solid var(--success-color);
+    border-radius: 6px;
+    line-height: 1.6;
+}
+
+.provenance-snippet strong {
+    display: block;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.provenance-snippet em {
+    color: #495057;
+    font-style: italic;
+}
+
+.provenance-metadata {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e0e6ed;
+}
+
+.source-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid var(--primary-color);
+    transition: all 0.2s;
+}
+
+.source-link:hover {
+    background: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.confidence-score {
+    color: var(--success-color);
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid var(--success-color);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
 .sources-list li a {
     color: var(--primary-color);
     text-decoration: none;

@@ -108,11 +108,12 @@ async def run_research(session_id, query, breadth, depth, is_report):
         except Exception as e:
             log_to_queue(session_id, 'warning', f'Could not generate feedback: {str(e)}')
         
-        # Send final result (sources separate from output)
+        # Send final result (sources separate from output, include provenance)
         log_to_queue(session_id, 'complete', {
             'output': final_output,
             'learnings': research_result.learnings,
-            'visited_urls': research_result.visited_urls
+            'visited_urls': research_result.visited_urls,
+            'learnings_with_provenance': research_result.learnings_with_provenance or []
         })
         
     except Exception as e:

@@ -29,10 +29,39 @@ except ImportError:
 from .ai.providers import generate_object, trim_prompt, parse_response
 from .prompt import system_prompt
 
+# Try to import retrieval processor (optional enhancement)
+try:
+    from .retrieval_processor import process_search_results
+    RETRIEVAL_PROCESSOR_AVAILABLE = True
+except ImportError:
+    RETRIEVAL_PROCESSOR_AVAILABLE = False
+    print("Note: Retrieval processor not available. Install sentence-transformers for enhanced search ranking.")
+
 
 def log(*args):
     """Helper function for consistent logging"""
     print(*args)
+
+
+def _unescape_escapes(text: Optional[str]) -> Optional[str]:
+    """Convert common escaped sequences (e.g. "\\n") into actual characters.
+
+    Tries a unicode-escape decode first, falls back to manual replacements.
+    This fixes cases where generated text contains literal backslash sequences
+    that should be rendered as newlines/tabs when displayed or saved.
+    """
+    if text is None:
+        return None
+    if not isinstance(text, str):
+        return text
+    try:
+        # unicode_escape will convert sequences like \n, \t, etc. into actual
+        # control characters. Wrap in bytes to avoid accidental changes when
+        # the string already contains real unicode escapes.
+        return bytes(text, "utf-8").decode("unicode_escape")
+    except Exception:
+        # Fallback: do manual replacements for the most common escapes
+        return text.replace('\\n', '\n').replace('\\r', '\r').replace('\\t', '\t').replace('\\\\', '\\')
 
 
 class ResearchProgress(TypedDict):
@@ -49,6 +78,7 @@ class ResearchProgress(TypedDict):
 class ResearchResult:
     learnings: List[str]
     visited_urls: List[str]
+    learnings_with_provenance: Optional[List[Dict[str, Any]]] = None
 
 
 @dataclass
@@ -130,12 +160,14 @@ async def process_serp_result(
     query: str,
     result: Dict[str, Any],
     num_learnings: int = 3,
-    num_follow_up_questions: int = 3
-) -> Dict[str, List[str]]:
-    """Process SERP search results"""
+    num_follow_up_questions: int = 3,
+    track_provenance: bool = True
+) -> Dict[str, Any]:
+    """Process SERP search results with optional provenance tracking"""
     
     # Extract content from search results
     contents = []
+    source_documents = []  # For provenance tracking
     if "data" in result:
         log(f"DEBUG: Found {len(result['data'])} items in search results")
         for i, item in enumerate(result["data"]):
@@ -143,10 +175,14 @@ async def process_serp_result(
             if "markdown" in item and item["markdown"]:
                 content = trim_prompt(item["markdown"], 25000)
                 contents.append(content)
+                # Store full document for provenance
+                source_documents.append(item)
                 log(f"DEBUG: Added markdown content from item {i}")
             elif "content" in item and item["content"]:
                 content = trim_prompt(item["content"], 25000)
                 contents.append(content)
+                # Store full document for provenance
+                source_documents.append(item)
                 log(f"DEBUG: Added content from item {i}")
     else:
         log(f"DEBUG: No 'data' key in result. Result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
@@ -188,20 +224,37 @@ async def process_serp_result(
         follow_up_questions = result.get("follow_up_questions", [])
         
         log(f"Created {len(learnings)} learnings", learnings)
+        
+        # Track provenance if enabled
+        learnings_with_provenance = []
+        if track_provenance and learnings:
+            try:
+                from .provenance import track_learning_provenance
+                provenance_records = track_learning_provenance(
+                    learnings=learnings,
+                    source_documents=source_documents
+                )
+                learnings_with_provenance = [rec.to_dict() for rec in provenance_records]
+                log(f"Tracked provenance for {len(learnings_with_provenance)} learnings")
+            except Exception as e:
+                log(f"Warning: Could not track provenance: {e}")
+        
         return {
             "learnings": learnings,
-            "follow_up_questions": follow_up_questions
+            "follow_up_questions": follow_up_questions,
+            "learnings_with_provenance": learnings_with_provenance
         }
     
     except Exception as e:
         log(f"Error processing SERP result: {e}")
-        return {"learnings": [], "follow_up_questions": []}
+        return {"learnings": [], "follow_up_questions": [], "learnings_with_provenance": []}
 
 
 async def write_final_report(
     prompt: str,
     learnings: List[str],
-    visited_urls: List[str]
+    visited_urls: List[str],
+    learnings_with_provenance: Optional[List[Dict[str, Any]]] = None
 ) -> str:
     """Write final research report"""
     
@@ -228,10 +281,35 @@ async def write_final_report(
         result = parse_response(response)
         
         report = result.get("report_markdown", "")
-        
+
         # Append sources
         urls_section = f"\n\n## Sources\n\n" + "\n".join([f"- {url}" for url in visited_urls])
-        return report + urls_section
+
+        # Append provenance if available
+        if learnings_with_provenance:
+            try:
+                from .provenance import format_learnings_with_provenance, ProvenanceRecord
+                # Convert dicts back to ProvenanceRecord objects
+                provenance_objs = [ProvenanceRecord(**p) for p in learnings_with_provenance]
+                provenance_section = format_learnings_with_provenance(
+                    provenance_objs,
+                    format='markdown'
+                )
+                # Ensure any escaped sequences (like "\\n") are converted to real
+                # newlines before returning/saving the report so PDFs and UI render
+                # line breaks properly.
+                provenance_section = _unescape_escapes(provenance_section) or ""
+                report = _unescape_escapes(report) or ""
+                urls_section = _unescape_escapes(urls_section) or ""
+
+                report = report + "\n\n---\n\n" + provenance_section + urls_section
+            except Exception as e:
+                log(f"Warning: Could not format provenance: {e}")
+                report = report + urls_section
+        else:
+            report = _unescape_escapes(report + urls_section) or ""
+
+        return report
     
     except Exception as e:
         log(f"Error writing final report: {e}")
@@ -271,6 +349,9 @@ async def write_final_answer(
         
         answer = result.get("exact_answer", "")
         log(f"DEBUG: Final answer extracted: '{answer}'")
+        # Sanitize escaped sequences so the UI and saved files show proper
+        # newlines instead of literal "\\n" text.
+        answer = _unescape_escapes(answer) or ""
         
         return answer
     
@@ -376,6 +457,27 @@ async def deep_research(
                 
                 log(f"Found {len(new_urls)} URLs, successfully scraped {len(scraped_contents)} pages")
                 
+                # Apply retrieval post-processing if available
+                if RETRIEVAL_PROCESSOR_AVAILABLE and scraped_contents:
+                    try:
+                        # Get settings from environment or use defaults
+                        use_reranking = os.getenv("USE_RERANKING", "true").lower() == "true"
+                        dedup_threshold = float(os.getenv("DEDUP_THRESHOLD", "0.9"))
+                        min_year = int(os.getenv("MIN_YEAR", "2020"))
+                        
+                        if use_reranking:
+                            log(f"Applying retrieval post-processing...")
+                            scraped_contents, stats = process_search_results(
+                                results=scraped_contents,
+                                query=serp_query.query,
+                                dedup_threshold=dedup_threshold,
+                                min_year=min_year
+                            )
+                            log(f"Post-processing: {stats.initial_count} → {stats.after_freshness} documents")
+                    except Exception as e:
+                        log(f"Warning: Retrieval post-processing failed: {e}")
+                        # Continue with original results
+                
                 new_breadth = max(1, breadth // 2)
                 new_depth = depth - 1
                 
@@ -388,11 +490,13 @@ async def deep_research(
                 processed = await process_serp_result(
                     serp_query.query,
                     processed_result,
-                    num_follow_up_questions=new_breadth
+                    num_follow_up_questions=new_breadth,
+                    track_provenance=True
                 )
                 
                 all_learnings = learnings + processed["learnings"]
                 all_urls = visited_urls + new_urls
+                all_provenance = processed.get("learnings_with_provenance", [])
                 
                 if new_depth > 0:
                     log(f"Researching deeper, breadth: {new_breadth}, depth: {new_depth}")
@@ -409,7 +513,7 @@ Previous research goal: {serp_query.research_goal}
 Follow-up research directions: {chr(10).join(processed["follow_up_questions"])}
                     """.strip()
                     
-                    return await deep_research(
+                    deeper_result = await deep_research(
                         next_query,
                         new_breadth,
                         new_depth,
@@ -417,20 +521,32 @@ Follow-up research directions: {chr(10).join(processed["follow_up_questions"])}
                         all_urls,
                         on_progress
                     )
+                    # Merge provenance from deeper research
+                    if deeper_result.learnings_with_provenance:
+                        all_provenance.extend(deeper_result.learnings_with_provenance)
+                    return ResearchResult(
+                        learnings=deeper_result.learnings,
+                        visited_urls=deeper_result.visited_urls,
+                        learnings_with_provenance=all_provenance
+                    )
                 else:
                     report_progress({
                         "current_depth": 0,
                         "completed_queries": progress["completed_queries"] + 1,
                         "current_query": serp_query.query
                     })
-                    return ResearchResult(learnings=all_learnings, visited_urls=all_urls)
+                    return ResearchResult(
+                        learnings=all_learnings,
+                        visited_urls=all_urls,
+                        learnings_with_provenance=all_provenance
+                    )
                     
             except Exception as e:
                 if "timeout" in str(e).lower():
                     log(f"Timeout error running query: {serp_query.query}: {e}")
                 else:
                     log(f"Error running query: {serp_query.query}: {e}")
-                return ResearchResult(learnings=[], visited_urls=[])
+                return ResearchResult(learnings=[], visited_urls=[], learnings_with_provenance=[])
     
     # Execute all queries concurrently
     tasks = [process_query(query) for query in serp_queries]
@@ -439,15 +555,19 @@ Follow-up research directions: {chr(10).join(processed["follow_up_questions"])}
     # Process results
     all_learnings = set(learnings)
     all_urls = set(visited_urls)
+    all_provenance = []
     
     for result in results:
         if isinstance(result, ResearchResult):
             all_learnings.update(result.learnings)
             all_urls.update(result.visited_urls)
+            if result.learnings_with_provenance:
+                all_provenance.extend(result.learnings_with_provenance)
         elif isinstance(result, Exception):
             log(f"Task failed with exception: {result}")
     
     return ResearchResult(
         learnings=list(all_learnings),
-        visited_urls=list(all_urls)
+        visited_urls=list(all_urls),
+        learnings_with_provenance=all_provenance if all_provenance else None
     )
