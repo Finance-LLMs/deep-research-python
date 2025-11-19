@@ -1,4 +1,4 @@
-# Deep Research Python
+# OpenProvHop Deep Research
 
 An AI-powered research assistant that performs iterative, deep research on any topic by combining web search, content analysis, and large language models.
 
